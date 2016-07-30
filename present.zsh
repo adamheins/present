@@ -2,16 +2,14 @@
 if [[ $- == *i* ]]; then
 
 present-next-widget() {
-  present --next
-  LBUFFER=$(present --get)
+  LBUFFER=$(present --next-and-get)
   zle redisplay
 }
 zle     -N   present-next-widget
 bindkey '^O' present-next-widget
 
 present-prev-widget() {
-  present --prev
-  LBUFFER=$(present --get)
+  LBUFFER=$(present --prev-and-get)
   zle redisplay
 }
 zle     -N   present-prev-widget
