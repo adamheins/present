@@ -2,15 +2,24 @@
 if [[ $- == *i* ]]; then
 
 present-next-widget() {
-  LBUFFER=$(present --next-and-get)
-  zle redisplay
+  text=$(present --next-and-get)
+  if [[ $text[1] == ">" ]]; then
+    echo ""
+    echo $text[2,-1]
+  else
+    LBUFFER="$text"
+    zle redisplay
+  fi
 }
 zle     -N   present-next-widget
 bindkey '^O' present-next-widget
 
 present-prev-widget() {
-  LBUFFER=$(present --prev-and-get)
-  zle redisplay
+  text=$(present --prev-and-get)
+  if [[ $text[1] != ">" ]]; then
+    LBUFFER="$text"
+    zle redisplay
+  fi
 }
 zle     -N   present-prev-widget
 bindkey '^L' present-prev-widget

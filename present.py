@@ -6,6 +6,8 @@ import sys
 import os
 
 
+# TODO check for environment variables for these
+
 # Directory in which to store presentation data.
 PRESENT_DIR_NAME = '.present'
 
@@ -17,7 +19,11 @@ USER_HOME_DIR = os.path.expanduser('~')
 PRESENT_DIR_PATH = os.path.join(USER_HOME_DIR, PRESENT_DIR_NAME)
 SCRATCH_FILE_PATH = os.path.join(PRESENT_DIR_PATH, SCRATCH_FILE_NAME)
 
-USAGE_TEXT = 'usage: present file [start]'
+USAGE_TEXT = '''
+usage: present file [start]
+       present [-hrs]
+'''.strip()
+
 HELP_TEXT = '''
 present is a tool for presenting command line tasks.
 
@@ -56,10 +62,10 @@ class Scratch:
     def read():
         ''' Read data from the scratch file. '''
         with open(SCRATCH_FILE_PATH, 'r') as scratch:
-            lines = scratch.readlines()
-        presentation_file = lines[0].strip()
-        start = int(lines[1].strip())
-        current = int(lines[2].strip())
+            lines = [line.strip() for line in scratch.readlines()]
+        presentation_file = lines[0]
+        start = int(lines[1])
+        current = int(lines[2])
         return presentation_file, start, current
 
 
@@ -73,11 +79,10 @@ class Presentation(object):
 
         # Read in presentation data.
         with open(path, 'r') as src:
-            lines = src.readlines()
+            lines = [line.strip() for line in src.readlines()]
 
         # Process the lines, removing blanks and comments.
-        lines = [line.strip() for line in lines]
-        self.lines = [line for line in lines if (len(line) > 0 and line[0] != '#')]
+        self.lines = [line for line in lines if len(line) > 0 and line[0] != '#']
 
     @staticmethod
     def load():
@@ -92,7 +97,6 @@ class Presentation(object):
 
         # Copy the presentation to the '.present' directory.
         dest_path = os.path.join(PRESENT_DIR_PATH, path)
-
         with open(path, 'r') as src:
             data = src.read()
         with open(dest_path, 'w') as dest:
@@ -119,13 +123,25 @@ class Presentation(object):
 
     def status(self):
         ''' Generate a message on the current status of the presentation. '''
+        line = self.get()
+
+        # Lines that start with a '>' are meant to be echoed to the command
+        # line normally, with the leading '>' stripped.
+        if line[0] == '>':
+            char = '>'
+            line = line[1:]
+        else:
+            char = '$'
+
         if self.start == self.current:
-            return 'At start of \'{}\':\n > {}'.format(self.path, self.get())
-        return 'Presenting \'{}\' at line {}:\n > {}'.format(self.path,
+            return 'At start of \'{}\':\n {} {}'.format(self.path, char, line)
+        return 'Presenting \'{}\' at line {}:\n {} {}'.format(self.path,
                                                              self.current,
-                                                             self.get())
+                                                             char,
+                                                             line)
 
     def reset(self):
+        ''' Reset the presentation back to the beginning. '''
         self.current = self.start
 
     def save(self):
@@ -160,8 +176,11 @@ def main(args):
         presentation_file = args[0]
         start = args[1] if len(args) > 1 else 0
 
-        # TODO check file actually exists
-        Presentation.new(presentation_file, start).save()
+        if os.path.isfile(presentation_file):
+            Presentation.new(presentation_file, start).save()
+        else:
+            print('Error: No such file: \'{}\'.'.format(presentation_file))
+            return 1
 
 if __name__ == '__main__':
     main(sys.argv[1:])
