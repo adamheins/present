@@ -177,6 +177,10 @@ def main(args):
         start = args[1] if len(args) > 1 else 0
 
         if os.path.isfile(presentation_file):
+            # Remove existing files from the $PRESENT dir.
+            for f in os.listdir(PRESENT_DIR_PATH):
+                os.remove(os.path.join(PRESENT_DIR_PATH, f))
+
             Presentation.new(presentation_file, start).save()
         else:
             print('Error: No such file: \'{}\'.'.format(presentation_file))
