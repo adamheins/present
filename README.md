@@ -53,8 +53,7 @@ Other commands are:
 ### Presentation Files
 Presentation files are essentially just lists of terminal commands that you
 want to show up at your prompt, one per line. Blank lines and lines starting
-with a '#' are ignored. Lines that start with '>' are echoed directly to the
-terminal rather than pasted at your prompt.
+with a '#' are ignored.
 
 ## License
 MIT license. See the LICENSE file.

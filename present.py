@@ -6,10 +6,9 @@ import sys
 import os
 
 
-# TODO check for environment variables for these
-
 # Directory in which to store presentation data.
-PRESENT_DIR_NAME = '.present'
+PRESENT_DIR_NAME = os.environ.get('PRESENT_DIR')
+PRESENT_DIR_NAME = PRESENT_DIR_NAME if PRESENT_DIR_NAME else '.present'
 
 # Scratch file to save presentation state.
 SCRATCH_FILE_NAME = '.scratch'
@@ -40,13 +39,15 @@ When a presentation is already running, the following commands can be used:
   -s, --status  Print the current status of the presentation.
 '''.strip()
 
-# Scratch file format:
-#   presentation_file_name
-#   starting position (line number)
-#   current position
 
 class Scratch:
-    ''' Wrapper around the presentation scratch file. '''
+    ''' Wrapper around the presentation scratch file.
+
+        Scratch file format:
+         1 presentation_file_name
+         2 starting position (line number)
+         3 current position (line number)
+    '''
 
     @staticmethod
     def write(presentation_file, start, current):
@@ -111,13 +112,15 @@ class Presentation(object):
 
     def prev(self):
         ''' Move back one line in the presentation. '''
-        if self.current <= 0:
+        # Note that self.current can go below 0, to -1. This indicates that the
+        # user has moved back past the start of the presentation.
+        if self.current < 0:
             return
         self.current -= 1
 
     def get(self):
         ''' Get the current line of the presentation. '''
-        if self.current >= len(self.lines):
+        if self.current >= len(self.lines) or self.current < 0:
             return ''
         return self.lines[self.current]
 
@@ -125,19 +128,10 @@ class Presentation(object):
         ''' Generate a message on the current status of the presentation. '''
         line = self.get()
 
-        # Lines that start with a '>' are meant to be echoed to the command
-        # line normally, with the leading '>' stripped.
-        if line[0] == '>':
-            char = '>'
-            line = line[1:]
-        else:
-            char = '$'
-
         if self.start == self.current:
-            return 'At start of \'{}\':\n {} {}'.format(self.path, char, line)
-        return 'Presenting \'{}\' at line {}:\n {} {}'.format(self.path,
+            return 'At start of \'{}\':\n $ {}'.format(self.path, line)
+        return 'Presenting \'{}\' at line {}:\n $ {}'.format(self.path,
                                                              self.current,
-                                                             char,
                                                              line)
 
     def reset(self):
