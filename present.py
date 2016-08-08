@@ -47,17 +47,17 @@ class Scratch:
          1 presentation_file_name
          2 starting position (line number)
          3 current position (line number)
+         4 direction
     '''
 
     @staticmethod
-    def write(presentation_file, start, current):
+    def write(presentation_file, start, current, direction):
         ''' Write data to the scratch file. '''
+
         with open(SCRATCH_FILE_PATH, 'w') as scratch:
-            scratch.write(presentation_file)
-            scratch.write('\n')
-            scratch.write(str(start))
-            scratch.write('\n')
-            scratch.write(str(current))
+            content = '{}\n{}\n{}\n{}'.format(presentation_file, start, current,
+                                              direction)
+            scratch.write(content)
 
     @staticmethod
     def read():
@@ -67,16 +67,22 @@ class Scratch:
         presentation_file = lines[0]
         start = int(lines[1])
         current = int(lines[2])
-        return presentation_file, start, current
+        direction = lines[3]
+        return presentation_file, start, current, direction
 
 
 class Presentation(object):
     ''' Wrapper around a presentation file. '''
-    def __init__(self, path, start, current):
+
+    DIRECTION_NEXT = '0'
+    DIRECTION_PREV = '1'
+
+    def __init__(self, path, start, current, direction):
         # Presentation metadata.
         self.path = path
         self.start = start
         self.current = current
+        self.direction = direction
 
         # Read in presentation data.
         with open(path, 'r') as src:
@@ -88,13 +94,14 @@ class Presentation(object):
     @staticmethod
     def load():
         ''' Load a presentation from the scratch file. '''
-        presentation_file, start, current = Scratch.read()
-        return Presentation(presentation_file, start, current)
+        presentation_file, start, current, direction = Scratch.read()
+        return Presentation(presentation_file, start, current, direction)
 
     @staticmethod
     def new(path, start):
         ''' Start a presentation from passed arguments. '''
-        presentation = Presentation(path, start, start)
+        presentation = Presentation(path, start, start,
+                                    Presentation.DIRECTION_NEXT)
 
         # Copy the presentation to the '.present' directory.
         dest_path = os.path.join(PRESENT_DIR_PATH, path)
@@ -105,18 +112,30 @@ class Presentation(object):
 
         return presentation
 
+    def bound(self):
+        ''' Bound the current position within permissible limits. '''
+        if self.current < -1:
+            self.current = -1
+        elif self.current > len(self.lines):
+            self.current = len(self.lines)
+
     def next(self):
         ''' Move forward one line in the presentation. '''
-        if self.current < len(self.lines):
+        if self.direction == Presentation.DIRECTION_PREV:
             self.current += 1
+        else:
+            self.current += 1
+        self.bound()
+        self.direction = Presentation.DIRECTION_NEXT
 
     def prev(self):
         ''' Move back one line in the presentation. '''
-        # Note that self.current can go below 0, to -1. This indicates that the
-        # user has moved back past the start of the presentation.
-        if self.current < 0:
-            return
-        self.current -= 1
+        if self.direction == Presentation.DIRECTION_NEXT:
+            self.current -= 1
+        else:
+            self.current -= 1
+        self.bound()
+        self.direction = Presentation.DIRECTION_PREV
 
     def get(self):
         ''' Get the current line of the presentation. '''
@@ -137,10 +156,11 @@ class Presentation(object):
     def reset(self):
         ''' Reset the presentation back to the beginning. '''
         self.current = self.start
+        self.direction = Presentation.DIRECTION_NEXT
 
     def save(self):
         ''' Save the current state of the presentation back to a scratch file. '''
-        Scratch.write(self.path, self.start, self.current)
+        Scratch.write(self.path, self.start, self.current, self.direction)
 
 
 def main(args):
@@ -157,8 +177,8 @@ def main(args):
         pres.save()
     elif args[0] == '--next-and-get':
         pres = Presentation.load()
-        print(pres.get())
         pres.next()
+        print(pres.get())
         pres.save()
     elif args[0] in ['-r', '--reset']:
         pres = Presentation.load()
@@ -168,7 +188,7 @@ def main(args):
         print(Presentation.load().status())
     else:
         presentation_file = args[0]
-        start = args[1] if len(args) > 1 else 0
+        start = (int(args[1]) if len(args) > 1 else 0) - 1
 
         if os.path.isfile(presentation_file):
             # Remove existing files from the $PRESENT dir.
