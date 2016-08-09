@@ -20,7 +20,7 @@ PRESENT_DIR_PATH = os.path.join(USER_HOME_DIR, PRESENT_DIR_NAME)
 SCRATCH_FILE_PATH = os.path.join(PRESENT_DIR_PATH, SCRATCH_FILE_NAME)
 
 USAGE_TEXT = '''
-usage: present file [start]
+usage: present file name [start]
        present [-hrs]
 '''.strip()
 
@@ -28,9 +28,10 @@ HELP_TEXT = '''
 present is a tool for presenting command line tasks.
 
 To start a presentation, run:
-  present file [start]
+  present file name [start]
 where:
   'file'  is the presentation file to use.
+  'name'  is the name of the presentation.
   'start' is the line number (zero-indexed) to start the presentation from.
           Default is 0.
 
@@ -117,15 +118,20 @@ class Presentation(object):
 
     def status(self):
         ''' Generate a message on the current status of the presentation. '''
-        # TODO if direction is NEXT, need to artifically move to next()
-        # if direction is PREV, we should be okay?
+        # Since next() is always called before calling get(), we need to
+        # artificially call next() here and then go back after calling get().
+        self.next()
         line = self.get()
+        self.prev()
 
-        if self.start == self.current:
+        if self.current == self.start:
             return 'At start of \'{}\':\n {}'.format(self.name, line)
-        return 'Presenting \'{}\' at line {}:\n {}'.format(self.name,
-                                                           self.current,
-                                                           line)
+        elif self.current + 1 == len(self.lines):
+            return 'At end of \'{}\'.'.format(self.name)
+        else:
+            return 'Presenting \'{}\' at line {}:\n {}'.format(self.name,
+                                                               self.current + 1,
+                                                               line)
 
     def reset(self):
         ''' Reset the presentation back to the beginning. '''
@@ -160,7 +166,11 @@ def main(args):
     elif args[0] in ['-s', '--status']:
         print(Presentation.load().status())
     else:
-        # TODO more robust arg parsing here
+        if len(args) < 2:
+            print(USAGE_TEXT)
+            return
+
+        # Parse args.
         path = os.path.realpath(os.path.expanduser(args[0]))
         name = args[1]
         start = (int(args[2]) if len(args) > 2 else 0) - 1

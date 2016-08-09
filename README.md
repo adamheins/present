@@ -34,11 +34,12 @@ do it every time you start a new shell.
 ## Usage
 To start a presentation, run:
 ```
-present <file> [start]
+present file name [start]
 ```
-where `<file>` is the presentation file you want to use. Optionally, you can
-specify `[start]`, which is the line number that marks the start of the
-presentation. If not specified, this defaults to the first line of the file.
+where `file` is the presentation file you want to use and `name` is the name of
+the presentation. Optionally, you can specify `[start]`, which is the line
+number that marks the start of the presentation (zero-indexed). If not
+specified, this defaults to the first line of the file.
 
 To navigate through the presentation, use the key bindings provided by
 present.zsh. By default, these are Ctrl-O to advance and Ctrl-L to go back.
